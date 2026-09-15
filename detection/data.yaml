@@ -1,0 +1,6 @@
+# YOLO dataset config (filled in after the CVAT export is split into train/val)
+path: data/annotations/bboxes
+train: images/train
+val: images/val
+nc: 2
+names: [player, ball]

@@ -1,0 +1,40 @@
+# All paths + hyperparameters live here; scripts should read from this instead of hardcoding.
+paths:
+  photos: src/photos
+  to_label: src/to_label
+  match_01_clips: src/match_01/shot_clips_trimmed
+  videos: src/videos
+  raw_videos: data/raw_videos
+  bboxes: data/annotations/bboxes
+  shot_labels: data/annotations/shot_labels.csv
+  landing_labels: data/annotations/landing_labels.csv
+  pose_sequences: data/processed/pose_sequences
+  ball_trajectories: data/processed/ball_trajectories
+
+detection:
+  data_yaml: detection/data.yaml
+  base_weights: yolov8n.pt
+  epochs: 100
+  imgsz: 640
+  batch: 16
+  weights_dir: detection/weights
+
+pose:
+  keypoints: 17   # COCO-17
+
+event_segmenter:
+  window_frames: 24   # ~15-30 frames around each contact
+
+shot_classifier:
+  classes: [drive, dink, drop, lob, serve, volley]
+  epochs: 50
+  lr: 0.001
+  batch: 32
+  weights_dir: shot_classifier/weights
+
+placement_predictor:
+  grid: [4, 4]
+  epochs: 50
+  lr: 0.001
+  batch: 32
+  weights_dir: placement_predictor/weights

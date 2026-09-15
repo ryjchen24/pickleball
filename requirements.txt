@@ -1,0 +1,10 @@
+# Pinned to the versions installed in .venv. Add new packages pinned as you install them.
+torch==2.13.0
+torchvision==0.28.0
+ultralytics==8.4.128
+opencv-python==5.0.0.93
+numpy==2.5.2
+PyYAML==6.0.3
+# not installed yet - pin when added:
+# pandas
+# rtmlib
