@@ -33,7 +33,7 @@ shot_classifier:
   weights_dir: shot_classifier/weights
 
 placement_predictor:
-  grid: [4, 4]
+  grid_cols: 4
   epochs: 50
   lr: 0.001
   batch: 32

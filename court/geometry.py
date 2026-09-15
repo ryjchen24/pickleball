@@ -18,12 +18,25 @@ def _as_points(points):
     return pts.reshape(-1, 2), single
 
 
+ROW_EDGES = (0.0, KITCHEN_DEPTH, KITCHEN_DEPTH + (NET_Y - KITCHEN_DEPTH) / 2, NET_Y)
+
+
+def _depth_from_net(y, half):
+    return NET_Y - y if half == "far" else y - NET_Y
+
+
+def _y_from_depth(depth, half):
+    return NET_Y - depth if half == "far" else NET_Y + depth
+
+
 class CourtMapper:
-    def __init__(self, image_corners, grid=(4, 4)):
+    def __init__(self, image_corners, cols=4):
         self.image_corners = np.asarray(image_corners, dtype=np.float32).reshape(4, 2)
         self.H = cv2.getPerspectiveTransform(self.image_corners, COURT_CORNERS)
         self.H_inv = np.linalg.inv(self.H)
-        self.rows, self.cols = grid
+        self.rows = len(ROW_EDGES) - 1
+        self.cols = cols
+        self.n_cells = self.rows * self.cols
 
     def _transform(self, points, H):
         pts, single = _as_points(points)
@@ -50,32 +63,30 @@ class CourtMapper:
     def in_kitchen(self, court_point):
         return abs(court_point[1] - NET_Y) <= KITCHEN_DEPTH
 
-    def grid_cell(self, court_point, half="far"):
+    def grid_cell(self, court_point, half=None):
         x, y = float(court_point[0]), float(court_point[1])
-        depth = y if half == "far" else y - NET_Y
+        half = half or self.side(court_point)
+        depth = _depth_from_net(y, half)
         if not (0 <= x <= COURT_WIDTH and 0 <= depth <= NET_Y):
             return -1
         col = min(int(x / COURT_WIDTH * self.cols), self.cols - 1)
-        row = min(int(depth / NET_Y * self.rows), self.rows - 1)
+        row = min(int(np.searchsorted(ROW_EDGES, depth, side="right")) - 1, self.rows - 1)
         return row * self.cols + col
 
-    def pixel_to_cell(self, pixel_point, half="far"):
+    def pixel_to_cell(self, pixel_point, half=None):
         return self.grid_cell(self.pixel_to_court(pixel_point), half)
 
-    def cell_center(self, cell, half="far"):
-        row, col = divmod(cell, self.cols)
-        x = (col + 0.5) * COURT_WIDTH / self.cols
-        depth = (row + 0.5) * NET_Y / self.rows
-        y = depth if half == "far" else depth + NET_Y
-        return np.array([x, y], dtype=np.float32)
-
-    def cell_polygon(self, cell, half="far"):
+    def _cell_bounds(self, cell):
         row, col = divmod(cell, self.cols)
         x0, x1 = col * COURT_WIDTH / self.cols, (col + 1) * COURT_WIDTH / self.cols
-        d0, d1 = row * NET_Y / self.rows, (row + 1) * NET_Y / self.rows
-        offset = 0.0 if half == "far" else NET_Y
-        corners = np.array(
-            [[x0, d0 + offset], [x1, d0 + offset], [x1, d1 + offset], [x0, d1 + offset]],
-            dtype=np.float32,
-        )
+        return x0, x1, ROW_EDGES[row], ROW_EDGES[row + 1]
+
+    def cell_center(self, cell, half):
+        x0, x1, d0, d1 = self._cell_bounds(cell)
+        return np.array([(x0 + x1) / 2, _y_from_depth((d0 + d1) / 2, half)], dtype=np.float32)
+
+    def cell_polygon(self, cell, half):
+        x0, x1, d0, d1 = self._cell_bounds(cell)
+        y0, y1 = _y_from_depth(d0, half), _y_from_depth(d1, half)
+        corners = np.array([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], dtype=np.float32)
         return self.court_to_pixel(corners)
