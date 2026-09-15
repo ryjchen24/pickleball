@@ -1,26 +1,7 @@
-import numpy as np
 import torch
 import torch.nn as nn
 
-COCO_EDGES = [
-    (0, 1), (0, 2), (1, 3), (2, 4),
-    (5, 6), (5, 7), (7, 9), (6, 8), (8, 10),
-    (5, 11), (6, 12), (11, 12),
-    (11, 13), (13, 15), (12, 14), (14, 16),
-    (0, 5), (0, 6),
-]
-NUM_JOINTS = 17
-
-
-def build_adjacency(num_joints=NUM_JOINTS, edges=COCO_EDGES):
-    A = np.zeros((num_joints, num_joints), dtype=np.float32)
-    for i, j in edges:
-        A[i, j] = A[j, i] = 1.0
-    neighbors = A.copy()
-    degree = neighbors.sum(axis=0)
-    degree[degree == 0] = 1.0
-    neighbors = neighbors / degree
-    return np.stack([np.eye(num_joints, dtype=np.float32), neighbors])
+from shot_classifier.graph_utils import COCO_EDGES, NUM_JOINTS, build_adjacency
 
 
 class GraphConv(nn.Module):
